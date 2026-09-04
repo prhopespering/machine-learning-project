@@ -1,0 +1,9 @@
+# Course materials kept local and outside the Lab 0 repository contents.
+/Syllabus/
+/Week*/
+/Unsorted/
+
+# OS/editor files.
+.DS_Store
+.vscode/
+.idea/
