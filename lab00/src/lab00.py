@@ -30,7 +30,17 @@ def sigmoid(z: np.ndarray) -> np.ndarray:
         `sigmoid(np.array([-1000.0, 1000.0]))` must return finite numbers,
         never `nan`.
     """
-    raise NotImplementedError
+    # we use a mask (boolean table) to indicate which of the given
+    # table position satisfy the `z >= 0` condition
+    mask = z >= 0
+    # we create an empty table to contain result, guarantee result type
+    # with `dtype=float`
+    result = np.empty_like(z, dtype=float)
+    # when `z >= 0` is true
+    result[mask] = 1 / (1+np.exp(-z[mask]))
+    # when `z >= 0` is false
+    result[~mask] = np.exp(z[~mask]) / (1 + np.exp(z[~mask]))
+    return result
 # ============================ END TODO (Task 1) ==============================
 
 
@@ -51,7 +61,21 @@ def softmax_loop(z: list) -> list:
     Requirement: the result must be finite for large-magnitude inputs.
         `softmax_loop([1000.0, 1001.0])` must not raise `OverflowError`.
     """
-    raise NotImplementedError
+    # we fetch max from list
+    maximum = max(z)
+    # we create a list to stock exp of given values
+    # then iterate the list, substracting maximum to each value
+    exp_values = []
+    for value in z:
+        exp_values.append(math.exp(value - maximum))
+    total = sum(exp_values)
+    # we create new list to stock the exp values divided by the total
+    # it gives decimal numbers, as a probability form, sum is equal
+    # to 1
+    result_list = []
+    for value in exp_values:
+        result_list.append(value / total)
+    return result_list
 # ============================ END TODO (Task 2) ==============================
 
 
@@ -71,7 +95,12 @@ def softmax_np(z: np.ndarray) -> np.ndarray:
     Requirement: the result must be finite for large-magnitude inputs.
         `softmax_np(np.array([1000.0, 1001.0]))` must not contain `nan`.
     """
-    raise NotImplementedError
+    # simplified version of task 2
+    maximum = np.max(z)
+    exp_value = np.exp(z - maximum)
+    total = np.sum(exp_value)
+    result = exp_value / total
+    return result
 # ============================ END TODO (Task 3) ==============================
 
 
@@ -91,7 +120,12 @@ def entropy(p: np.ndarray) -> float:
         0 * log(0) = 0, so the result stays finite (never `nan`, never `inf`).
         A one-hot `p` must give exactly 0.0.
     """
-    raise NotImplementedError
+    # ignore 0 instance with mask, simply return them as 0
+    mask = p > 0 
+    terms = p[mask] * np.log(p[mask])
+    # transform negative entropy value to positive one
+    entropy_value = -np.sum(terms)
+    return float(entropy_value)
 # ============================ END TODO (Task 4) ==============================
 
 
@@ -116,7 +150,11 @@ def cross_entropy(p: np.ndarray, q: np.ndarray) -> float:
         probability you take the logarithm of; Task 6 must use the same value.
         Do not modify the inputs in place.
     """
-    raise NotImplementedError
+    mask = p > 0
+    # protect q value with 1e-12 using maximum
+    q_active = np.maximum(q[mask], 1e-12)
+    result = -np.sum(p[mask] * np.log(q_active))
+    return float(result)
 # ============================ END TODO (Task 5) ==============================
 
 
@@ -137,7 +175,11 @@ def kl_divergence(p: np.ndarray, q: np.ndarray) -> float:
         must satisfy the identity D_KL(p || q) = H(p, q) - H(p); a test
         checks it against your own `cross_entropy` and `entropy`.
     """
-    raise NotImplementedError
+    mask = p > 0
+    q_active = np.maximum(q[mask], 1e-12)
+    result = p[mask] * np.log(p[mask] / q_active)
+    # return table sum as result
+    return float(np.sum(result))
 # ============================ END TODO (Task 6) ==============================
 
 
@@ -170,7 +212,35 @@ def focal_loss(p: np.ndarray, q: np.ndarray, gamma: float = 2.0,
     Requirement: with `gamma=0` and `alpha=None` this must return exactly the
         same value as `cross_entropy(p, q)` — a test checks that.
     """
-    raise NotImplementedError
+
+    """
+    Paper source :
+    --------------
+    A common method for addressing class imbalance is to
+    introduce a weighting factor α ∈ [0, 1] for class 1 and 1−α
+    for class −1. In practice α may be set by inverse class frequency
+    or treated as a hyperparameter to set by cross validation.
+    For notational convenience, we define αt analogously to how we defined pt.
+    We write the α-balanced CE loss as:
+    CE(pt) = −αt
+    log(pt). (3)
+    This loss is a simple extension to CE that we consider as an
+    experimental baseline for our proposed focal loss.
+    
+    Equations :
+    -----------
+    FL(pt) = −(1 − pt)γlog(pt)
+    FL(pt) = −αt(1 − pt)γlog(pt)
+    """
+    mask = p > 0
+    q_active = np.maximum(q[mask], 1e-12)
+    focal_factor = (1 - q_active) ** gamma
+    if alpha is None:
+        alpha_active = 1
+    else:
+        alpha_active = alpha[mask]
+    result = -np.sum(p[mask] * alpha_active * focal_factor * np.log(q_active))
+    return float(result)
 # ============================ END TODO (Task 7) ==============================
 
 

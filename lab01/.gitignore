@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+venv/
+.venv/
+env/
+
+.vscode/
+.idea/
+.DS_Store
+
+.ipynb_checkpoints/
+
+# Generated locally by the lab pipeline or report workflow.
+results.json
+report.pdf
+fig*.png
+*_lab01.zip
