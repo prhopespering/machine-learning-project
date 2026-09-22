@@ -15,8 +15,8 @@ import numpy as np
 import pandas as pd
 
 # ---- Fill in your information (used in results.json) ----
-STUDENT_ID = "00000000"   # TODO: your student id, e.g. "20261234"
-STUDENT_NAME = "None"     # TODO: your name in Korean or roman letters — "홍길동" / "HongGildong"
+STUDENT_ID = "50261637"             # TODO: your student id, e.g. "20261234"
+STUDENT_NAME = "MouhamedDouina"     # TODO: your name in Korean or roman letters — "홍길동" / "HongGildong"
 
 SEED = 42  # fixed for the whole course — DO NOT CHANGE
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "cafe_sales.csv"
@@ -41,7 +41,12 @@ def summarize_missing(df: pd.DataFrame) -> pd.Series:
         DESCENDING order of count (ties: keep pandas' stable order).
         Include only columns that have at least one missing value.
     """
-    raise NotImplementedError
+    mask = df.isna()
+    missing = mask.sum()
+    missing = missing[missing > 0]
+    # keep original order in case of equal value of `missing`
+    missing = missing.sort_values(ascending = False, kind = "stable")
+    return missing
 # ============================ END TODO (Task 1) ==============================
 
 
@@ -62,7 +67,25 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
     The returned frame must contain no missing values.
     """
-    raise NotImplementedError
+    # create a copy of the provided dataframe using df.copy
+    clean = df.copy()
+    # clear out duplicates in the copy
+    clean = clean.drop_duplicates(keep = "first").reset_index(drop = True)
+    # transform string based price with .str.replace into float value using .astype
+    clean["unit_price"] = pd.to_numeric(clean["unit_price"].astype(str).str.replace(",", "", regex = False).astype(float))
+    # using .median to find median value of non missing values
+    median_quantity = clean["quantity"].median()
+    # here we fill the missing quantity with the median of non missing quantities
+    # using `fillna` func
+    # we aswell turn this value into int type
+    clean["quantity"] = (clean["quantity"].fillna(median_quantity).astype(int))
+    # simple missing total price value computing
+    clean["total_price"] = clean["total_price"].fillna(clean["unit_price"] * clean["quantity"])
+    # we calculate the rating mean in order to replace the NaN values
+    # with rating_mean
+    rating_mean = round(clean["customer_rating"].mean(), 2)
+    clean["customer_rating"] = clean["customer_rating"].fillna(rating_mean)
+    return clean
 # ============================ END TODO (Task 2) ==============================
 
 
@@ -76,7 +99,16 @@ def detect_outliers_iqr(df: pd.DataFrame, column: str, k: float = 1.5) -> list:
 
     NaN values are never outliers. Return a plain Python list of ints.
     """
-    raise NotImplementedError
+    values = df[column]
+    value_q1 = values.quantile(0.25)
+    value_q3 = values.quantile(0.75)
+    iqr = value_q3 - value_q1
+    # defining limits where value in betweens is not anormal
+    lower_bound = value_q1 - k * iqr
+    upper_bound = value_q3 + k * iqr
+    # identify outliers with iqr bounds
+    mask = (values < lower_bound) | (values > upper_bound)
+    return sorted(df.index[mask].tolist())
 # ============================ END TODO (Task 3) ==============================
 
 
@@ -89,7 +121,9 @@ def compute_group_stats(df: pd.DataFrame, group_col: str, value_col: str) -> pd.
         ["count", "mean", "sum"] (count of non-missing values, mean rounded
         to 2 decimals, sum), sorted by "sum" in DESCENDING order.
     """
-    raise NotImplementedError
+    stats = df.groupby(group_col)[value_col].agg(["count", "mean", "sum"])
+    stats["mean"] = stats["mean"].round(2)
+    return stats.sort_values("sum", ascending = False, kind = "stable")
 # ============================ END TODO (Task 4) ==============================
 
 
